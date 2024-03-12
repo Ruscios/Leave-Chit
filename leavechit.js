@@ -271,9 +271,22 @@ async function modifyPdf() {
     // Fetch an existing PDF document
     const url = 'opm71_fillable.pdf';
   	const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
+    
+    // Fetch logo image
+	const pngLogoUrl = 'Images/Artboard 2.png';
+    const pngLogoBytes = await fetch(pngLogoUrl).then((res) => res.arrayBuffer());
 
     // Load a PDFDocument from the existing PDF bytes
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    
+    // Load logo image from bytes
+	const pngLogo = await pdfDoc.embedPng(pngLogoBytes);
+    
+    const pngLogoDims = pngLogo.scale(0.05);
+    
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    const { width, height } = firstPage.getSize()
 
     // Get PDFDocument Form Fields
     const form = pdfDoc.getForm();
@@ -352,6 +365,22 @@ async function modifyPdf() {
         form.getTextField('form1[0].#subform[0].Table7[0].Row3[0].TextField[0]').setText(LWOPHours.toString());
     }
 
+	//Draw logo on page
+    console.log('Width: ' + firstPage.getWidth())
+    console.log('Height: ' + firstPage.getHeight())
+	firstPage.drawImage(pngLogo, {
+    	x: 5, // firstPage.getWidth() / 2 - pngLogoDims.width / 2,
+        y: 5, // firstPage.getHeight() - pngLogoDims.height - 10,
+        width: pngLogoDims.width,
+        height: pngLogoDims.height
+    })
+    firstPage.drawImage(pngLogo, {
+    	x: firstPage.getWidth() - (pngLogoDims.width * 0.9) - 5,
+        y: firstPage.getHeight() - (pngLogoDims.height * 0.9) - 5,
+        width: pngLogoDims.width * 0.9,
+        height: pngLogoDims.height * 0.9
+    })
+    
     // Serialize the PDFDocument to bytes (a Uint8Array)
     const pdfBytes = await pdfDoc.save({dataUri: true})
       
